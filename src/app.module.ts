@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CustomersModule } from './customers/customers.module';
+import { PurchasesModule } from './purchases/purchases.module';
 import { StoresModule } from './stores/stores.module';
 import { UsersModule } from './users/users.module';
 
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module';
     StoresModule,
     UsersModule,
     CustomersModule,
+    PurchasesModule,
     AuthModule,
   ],
   controllers: [AppController],
