@@ -27,6 +27,9 @@ export class Product {
   @Column({ name: 'image_url', length: 500, nullable: true })
   imageUrl: string;
 
+  @Column({ name: 'track_inventory', type: 'boolean', default: true })
+  trackInventory: boolean;
+
   @Column({ type: 'int', default: 0 })
   stock: number;
 

@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -28,6 +29,10 @@ export class CreateProductDto {
   @IsUrl()
   @IsOptional()
   imageUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  trackInventory?: boolean;
 
   @IsInt()
   @Min(0)

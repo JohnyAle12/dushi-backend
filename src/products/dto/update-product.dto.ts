@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsInt,
   IsNumber,
   IsOptional,
@@ -28,6 +29,10 @@ export class UpdateProductDto {
   @IsUrl()
   @IsOptional()
   imageUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  trackInventory?: boolean;
 
   @IsInt()
   @Min(0)

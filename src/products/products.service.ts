@@ -28,8 +28,12 @@ export class ProductsService {
     return this.productsRepository.save(product);
   }
 
-  async findAll(): Promise<Product[]> {
-    return this.productsRepository.find();
+  async findAll(trackInventory?: boolean): Promise<Product[]> {
+    const where: any = {};
+    if (trackInventory !== undefined) {
+      where.trackInventory = trackInventory;
+    }
+    return this.productsRepository.find({ where });
   }
 
   async findOne(id: string): Promise<Product> {

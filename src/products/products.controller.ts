@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -27,8 +28,10 @@ export class ProductsController {
   }
 
   @Get()
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Query('trackInventory') trackInventory?: string) {
+    const filter =
+      trackInventory !== undefined ? trackInventory === 'true' : undefined;
+    return this.productsService.findAll(filter);
   }
 
   @Get(':id')
