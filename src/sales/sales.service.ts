@@ -5,10 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import {
+  Between,
+  DataSource,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { StockMovementType } from '../common/enums/stock-movement-type.enum';
 import { Product } from '../products/entities/product.entity';
 import { StockTransaction } from '../products/entities/stock-transaction.entity';
+import { PaymentMethod } from '../common/enums/payment-method.enum';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { UpdateSaleDto } from './dto/update-sale.dto';
 import { SaleItem } from './entities/sale-item.entity';
@@ -68,11 +75,42 @@ export class SalesService {
   async findAll(
     page = 1,
     limit = 20,
+    startDate?: string,
+    endDate?: string,
+    paymentMethod?: string,
   ): Promise<{
     data: Sale[];
     meta: { total: number; page: number; limit: number; totalPages: number };
   }> {
+    const where: any = {};
+    if (startDate && endDate) {
+      if (startDate > endDate) {
+        throw new BadRequestException(
+          'startDate must be before or equal to endDate',
+        );
+      }
+      where.createdAt = Between(
+        `${startDate}T00:00:00.000Z`,
+        `${endDate}T23:59:59.999Z`,
+      );
+    } else if (startDate) {
+      where.createdAt = MoreThanOrEqual(`${startDate}T00:00:00.000Z`);
+    } else if (endDate) {
+      where.createdAt = LessThanOrEqual(`${endDate}T23:59:59.999Z`);
+    }
+
+    if (paymentMethod) {
+      const validMethods = Object.values(PaymentMethod);
+      if (!validMethods.includes(paymentMethod as PaymentMethod)) {
+        throw new BadRequestException(
+          `paymentMethod must be one of: ${validMethods.join(', ')}`,
+        );
+      }
+      where.paymentMethod = paymentMethod;
+    }
+
     const [sales, total] = await this.salesRepository.findAndCount({
+      where: Object.keys(where).length ? where : undefined,
       relations: ['items', 'items.product'],
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
@@ -112,6 +150,7 @@ export class SalesService {
     startDate: string,
     endDate: string,
     groupBy: 'day' | 'month',
+    paymentMethod?: string,
   ): Promise<{
     data: { period: string; total: number; count: number }[];
     summary: { total: number; count: number };
@@ -126,6 +165,14 @@ export class SalesService {
         'startDate must be before or equal to endDate',
       );
     }
+    if (paymentMethod) {
+      const validMethods = Object.values(PaymentMethod);
+      if (!validMethods.includes(paymentMethod as PaymentMethod)) {
+        throw new BadRequestException(
+          `paymentMethod must be one of: ${validMethods.join(', ')}`,
+        );
+      }
+    }
 
     const qb = this.salesRepository
       .createQueryBuilder('sale')
@@ -133,6 +180,10 @@ export class SalesService {
       .addSelect('COUNT(sale.id)', 'count')
       .where('DATE(sale.created_at) >= :startDate', { startDate })
       .andWhere('DATE(sale.created_at) <= :endDate', { endDate });
+
+    if (paymentMethod) {
+      qb.andWhere('sale.payment_method = :paymentMethod', { paymentMethod });
+    }
 
     if (groupBy === 'day') {
       qb.addSelect('DATE(sale.created_at)', 'period')
@@ -156,6 +207,12 @@ export class SalesService {
       .addSelect('COUNT(sale.id)', 'count')
       .where('DATE(sale.created_at) >= :startDate', { startDate })
       .andWhere('DATE(sale.created_at) <= :endDate', { endDate });
+
+    if (paymentMethod) {
+      summaryQb.andWhere('sale.payment_method = :paymentMethod', {
+        paymentMethod,
+      });
+    }
     const summaryRow = await summaryQb.getRawOne<{
       total: string | null;
       count: string;

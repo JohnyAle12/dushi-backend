@@ -27,10 +27,19 @@ export class SalesController {
   }
 
   @Get()
-  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('paymentMethod') paymentMethod?: string,
+  ) {
     return this.salesService.findAll(
       page ? parseInt(page, 10) : undefined,
       limit ? parseInt(limit, 10) : undefined,
+      startDate,
+      endDate,
+      paymentMethod,
     );
   }
 
@@ -39,11 +48,13 @@ export class SalesController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
     @Query('groupBy') groupBy?: 'day' | 'month',
+    @Query('paymentMethod') paymentMethod?: string,
   ) {
     return this.salesService.getTotals(
       startDate,
       endDate,
       groupBy === 'month' ? 'month' : 'day',
+      paymentMethod,
     );
   }
 
