@@ -8,6 +8,7 @@ import { CustomersModule } from './customers/customers.module';
 import { ProductsModule } from './products/products.module';
 import { PurchasesModule } from './purchases/purchases.module';
 import { SalesModule } from './sales/sales.module';
+import { SeedModule } from './seed/seed.module';
 import { StoresModule } from './stores/stores.module';
 import { UsersModule } from './users/users.module';
 
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
     PurchasesModule,
     SalesModule,
     AuthModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
