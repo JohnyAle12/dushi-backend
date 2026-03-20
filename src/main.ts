@@ -14,6 +14,7 @@ async function bootstrap() {
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+  console.log(corsOrigin[0]);
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
@@ -25,7 +26,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: corsOrigin.length ? corsOrigin : 'http://localhost:5173',
+    origin: corsOrigin.length ? corsOrigin[0] : 'http://localhost:5173',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
