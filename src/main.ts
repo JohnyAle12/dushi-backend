@@ -30,6 +30,7 @@ async function bootstrap() {
       const allowedOrigins = [
         'http://localhost:5173',
         'https://dushi-pos-frontend-production.up.railway.app',
+        'https://dushi-pos-frontend-production.up.railway.app/',
       ];
 
       // permite requests sin origin (Postman, curl)
@@ -46,6 +47,6 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',
   });
 
-  await app.listen(3000);
+  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
