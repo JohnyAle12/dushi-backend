@@ -26,10 +26,24 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    // origin: corsOrigin.length ? corsOrigin : 'http://localhost:5173',
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        'http://localhost:5173',
+        'https://dushi-pos-frontend-production.up.railway.app',
+      ];
+
+      // permite requests sin origin (Postman, curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
   });
 
   await app.listen(3000);
