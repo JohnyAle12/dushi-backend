@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { IdentificationType } from '../../common/enums/identification-type.enum';
 
 export class CreateCustomerDto {
@@ -13,6 +13,6 @@ export class CreateCustomerDto {
   @IsNotEmpty()
   identificationNumber: string;
 
-  @IsEmail()
-  email: string;
+  @IsOptional()
+  email?: string;
 }

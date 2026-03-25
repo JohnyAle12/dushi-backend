@@ -26,8 +26,8 @@ export class Customer {
   @Column({ name: 'identification_number', unique: true, length: 50 })
   identificationNumber: string;
 
-  @Column({ unique: true, length: 255 })
-  email: string;
+  @Column({ length: 255, nullable: true })
+  email?: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
