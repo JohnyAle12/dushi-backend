@@ -58,6 +58,19 @@ export class SalesController {
     );
   }
 
+  @Get('by-product')
+  getSalesByProduct(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('paymentMethod') paymentMethod?: string,
+  ) {
+    return this.salesService.getSalesByProduct(
+      startDate,
+      endDate,
+      paymentMethod,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.salesService.findOne(id);

@@ -262,6 +262,86 @@ export class SalesService {
     };
   }
 
+  async getSalesByProduct(
+    startDate?: string,
+    endDate?: string,
+    paymentMethod?: string,
+  ): Promise<{
+    data: {
+      productId: string;
+      productName: string;
+      category: string | null;
+      quantitySold: number;
+      totalAmount: number;
+    }[];
+  }> {
+    if (startDate && endDate && startDate > endDate) {
+      throw new BadRequestException(
+        'startDate must be before or equal to endDate',
+      );
+    }
+    if (paymentMethod) {
+      const validMethods = Object.values(PaymentMethod);
+      if (!validMethods.includes(paymentMethod as PaymentMethod)) {
+        throw new BadRequestException(
+          `paymentMethod must be one of: ${validMethods.join(', ')}`,
+        );
+      }
+    }
+
+    const qb = this.saleItemsRepository
+      .createQueryBuilder('item')
+      .innerJoin('item.sale', 'sale')
+      .innerJoin('item.product', 'product')
+      .select('product.id', 'productId')
+      .addSelect('product.name', 'productName')
+      .addSelect('product.category', 'category')
+      .addSelect('SUM(item.quantity)', 'quantitySold')
+      .addSelect('SUM(item.total)', 'totalAmount')
+      .where('sale.deleted_at IS NULL')
+      .andWhere('item.deleted_at IS NULL')
+      .groupBy('product.id');
+
+    if (startDate && endDate) {
+      qb.andWhere('sale.created_at BETWEEN :start AND :end', {
+        start: `${startDate}T00:00:00.000Z`,
+        end: `${endDate}T23:59:59.999Z`,
+      });
+    } else if (startDate) {
+      qb.andWhere('sale.created_at >= :start', {
+        start: `${startDate}T00:00:00.000Z`,
+      });
+    } else if (endDate) {
+      qb.andWhere('sale.created_at <= :end', {
+        end: `${endDate}T23:59:59.999Z`,
+      });
+    }
+
+    if (paymentMethod) {
+      qb.andWhere('sale.payment_method = :paymentMethod', { paymentMethod });
+    }
+
+    qb.orderBy('SUM(item.quantity)', 'DESC');
+
+    const rows = await qb.getRawMany<{
+      productId: string;
+      productName: string;
+      category: string | null;
+      quantitySold: string;
+      totalAmount: string;
+    }>();
+
+    return {
+      data: rows.map((row) => ({
+        productId: row.productId,
+        productName: row.productName,
+        category: row.category,
+        quantitySold: Number(row.quantitySold),
+        totalAmount: Number(row.totalAmount),
+      })),
+    };
+  }
+
   async findOne(id: string): Promise<Sale> {
     const sale = await this.salesRepository.findOne({
       where: { id },
