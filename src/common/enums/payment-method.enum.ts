@@ -4,4 +4,5 @@ export enum PaymentMethod {
   NEQUI = 'nequi',
   DAVIPLATA = 'daviplata',
   BANCOLOMBIA = 'bancolombia',
+  RAPPI = 'rappi',
 }

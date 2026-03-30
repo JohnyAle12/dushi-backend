@@ -15,6 +15,7 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   PaymentMethod.NEQUI,
   PaymentMethod.DAVIPLATA,
   PaymentMethod.BANCOLOMBIA,
+  PaymentMethod.RAPPI,
 ];
 
 function pick<T>(arr: T[]): T {
