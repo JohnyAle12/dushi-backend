@@ -29,7 +29,7 @@ import { UsersModule } from './users/users.module';
         autoLoadEntities: true,
         synchronize: true,
         // Offset numérico para MySQL; también se usa TZ en main.ts para Node
-        timezone: 'Z', // UTC 0
+        timezone: config.get<string>('DB_TIMEZONE', '-05:00'), // UTC 0
       }),
     }),
     StoresModule,
