@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   Between,
   DataSource,
+  In,
   LessThanOrEqual,
   MoreThanOrEqual,
   Repository,
@@ -55,6 +56,33 @@ export class SalesService {
     private readonly usersRepository: Repository<User>,
     private readonly dataSource: DataSource,
   ) {}
+
+  private parsePaymentMethods(
+    paymentMethod?: string,
+  ): PaymentMethod[] | undefined {
+    if (!paymentMethod) {
+      return undefined;
+    }
+
+    const methods = paymentMethod
+      .split(',')
+      .map((method) => method.trim())
+      .filter(Boolean);
+    const validMethods = Object.values(PaymentMethod);
+    const invalid = methods.filter(
+      (method) => !validMethods.includes(method as PaymentMethod),
+    );
+
+    if (invalid.length > 0) {
+      throw new BadRequestException(
+        `paymentMethod must be one of: ${validMethods.join(
+          ', ',
+        )}. Invalid: ${invalid.join(', ')}`,
+      );
+    }
+
+    return methods as PaymentMethod[];
+  }
 
   private calculateTotalAfterDiscount(
     total: number,
@@ -190,14 +218,9 @@ export class SalesService {
       where.createdAt = LessThanOrEqual(`${endDate}T23:59:59.999Z`);
     }
 
-    if (paymentMethod) {
-      const validMethods = Object.values(PaymentMethod);
-      if (!validMethods.includes(paymentMethod as PaymentMethod)) {
-        throw new BadRequestException(
-          `paymentMethod must be one of: ${validMethods.join(', ')}`,
-        );
-      }
-      where.paymentMethod = paymentMethod;
+    const paymentMethods = this.parsePaymentMethods(paymentMethod);
+    if (paymentMethods?.length) {
+      where.paymentMethod = In(paymentMethods);
     }
 
     const [sales, total] = await this.salesRepository.findAndCount({
@@ -266,14 +289,7 @@ export class SalesService {
         'startDate must be before or equal to endDate',
       );
     }
-    if (paymentMethod) {
-      const validMethods = Object.values(PaymentMethod);
-      if (!validMethods.includes(paymentMethod as PaymentMethod)) {
-        throw new BadRequestException(
-          `paymentMethod must be one of: ${validMethods.join(', ')}`,
-        );
-      }
-    }
+    const paymentMethods = this.parsePaymentMethods(paymentMethod);
 
     const totalAfterDiscountSql = this.getTotalAfterDiscountSql(
       'sale.total',
@@ -289,8 +305,10 @@ export class SalesService {
       .andWhere('DATE(sale.created_at) >= :startDate', { startDate })
       .andWhere('DATE(sale.created_at) <= :endDate', { endDate });
 
-    if (paymentMethod) {
-      qb.andWhere('sale.payment_method = :paymentMethod', { paymentMethod });
+    if (paymentMethods?.length) {
+      qb.andWhere('sale.payment_method IN (:...paymentMethods)', {
+        paymentMethods,
+      });
     }
 
     if (groupBy === 'day') {
@@ -319,9 +337,9 @@ export class SalesService {
       .andWhere('DATE(sale.created_at) >= :startDate', { startDate })
       .andWhere('DATE(sale.created_at) <= :endDate', { endDate });
 
-    if (paymentMethod) {
-      summaryQb.andWhere('sale.payment_method = :paymentMethod', {
-        paymentMethod,
+    if (paymentMethods?.length) {
+      summaryQb.andWhere('sale.payment_method IN (:...paymentMethods)', {
+        paymentMethods,
       });
     }
     const summaryRow = await summaryQb.getRawOne<{
@@ -368,14 +386,7 @@ export class SalesService {
         'startDate must be before or equal to endDate',
       );
     }
-    if (paymentMethod) {
-      const validMethods = Object.values(PaymentMethod);
-      if (!validMethods.includes(paymentMethod as PaymentMethod)) {
-        throw new BadRequestException(
-          `paymentMethod must be one of: ${validMethods.join(', ')}`,
-        );
-      }
-    }
+    const paymentMethods = this.parsePaymentMethods(paymentMethod);
 
     const qb = this.saleItemsRepository
       .createQueryBuilder('item')
@@ -406,8 +417,10 @@ export class SalesService {
       });
     }
 
-    if (paymentMethod) {
-      qb.andWhere('sale.payment_method = :paymentMethod', { paymentMethod });
+    if (paymentMethods?.length) {
+      qb.andWhere('sale.payment_method IN (:...paymentMethods)', {
+        paymentMethods,
+      });
     }
 
     qb.orderBy('SUM(item.quantity)', 'DESC');
