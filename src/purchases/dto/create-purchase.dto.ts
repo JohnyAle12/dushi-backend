@@ -3,6 +3,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsDateString,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -11,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { CreatePurchaseItemDto } from './create-purchase-item.dto';
+import { PaymentMethod } from '../../common/enums/payment-method.enum';
 
 export class CreatePurchaseDto {
   @IsDateString()
@@ -19,6 +21,10 @@ export class CreatePurchaseDto {
   @IsString()
   @IsNotEmpty()
   supplier: string;
+
+  @IsEnum(PaymentMethod)
+  @IsOptional()
+  paymentMethod?: PaymentMethod;
 
   @IsString()
   @IsOptional()

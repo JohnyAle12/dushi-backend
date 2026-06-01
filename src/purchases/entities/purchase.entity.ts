@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Store } from '../../stores/entities/store.entity';
+import { PaymentMethod } from '../../common/enums/payment-method.enum';
 
 export interface PurchaseItem {
   name: string;
@@ -33,6 +34,14 @@ export class Purchase {
 
   @Column({ length: 200 })
   supplier: string;
+
+  @Column({
+    name: 'payment_method',
+    type: 'enum',
+    enum: PaymentMethod,
+    nullable: true,
+  })
+  paymentMethod: PaymentMethod | null;
 
   @Column({ type: 'text', nullable: true })
   observations: string;
