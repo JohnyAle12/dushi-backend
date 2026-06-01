@@ -120,6 +120,15 @@ export class SalesService {
   }
 
   async create(createSaleDto: CreateSaleDto, auth: AuthUser): Promise<Sale> {
+    if (
+      createSaleDto.paymentMethod === PaymentMethod.RAPPI &&
+      !createSaleDto.rappiOrderId?.trim()
+    ) {
+      throw new BadRequestException(
+        'rappiOrderId is required when paymentMethod is RAPPI',
+      );
+    }
+
     return this.dataSource.transaction(async (manager) => {
       const prefix = createSaleDto.prefix?.trim() || 'FV';
 
@@ -185,6 +194,10 @@ export class SalesService {
         number: nextNumber,
         userId: auth.id,
         storeId: auth.storeId,
+        rappiOrderId:
+          createSaleDto.paymentMethod === PaymentMethod.RAPPI
+            ? createSaleDto.rappiOrderId?.trim() || null
+            : null,
       });
       return manager.save(sale);
     });
@@ -462,6 +475,10 @@ export class SalesService {
   ): Promise<Sale> {
     const sale = await this.findOne(id, storeId);
 
+    if (updateSaleDto.rappiOrderId !== undefined) {
+      sale.rappiOrderId = updateSaleDto.rappiOrderId?.trim() || null;
+    }
+
     if (updateSaleDto.items) {
       await this.saleItemsRepository.delete({ saleId: id });
 
@@ -475,8 +492,29 @@ export class SalesService {
       sale.subtotal = updateSaleDto.subtotal;
     if (updateSaleDto.tax !== undefined) sale.tax = updateSaleDto.tax;
     if (updateSaleDto.total !== undefined) sale.total = updateSaleDto.total;
-    if (updateSaleDto.paymentMethod)
+    if (updateSaleDto.paymentMethod) {
       sale.paymentMethod = updateSaleDto.paymentMethod;
+
+      if (updateSaleDto.paymentMethod === PaymentMethod.RAPPI) {
+        const effectiveRappiOrderId =
+          updateSaleDto.rappiOrderId?.trim() || sale.rappiOrderId?.trim();
+        if (!effectiveRappiOrderId) {
+          throw new BadRequestException(
+            'rappiOrderId is required when paymentMethod is RAPPI',
+          );
+        }
+        sale.rappiOrderId = effectiveRappiOrderId;
+      } else {
+        sale.rappiOrderId = null;
+      }
+    } else if (
+      sale.paymentMethod === PaymentMethod.RAPPI &&
+      sale.rappiOrderId === null
+    ) {
+      throw new BadRequestException(
+        'rappiOrderId is required when paymentMethod is RAPPI',
+      );
+    }
     if (updateSaleDto.amountPaid !== undefined)
       sale.amountPaid = updateSaleDto.amountPaid;
     if (updateSaleDto.change !== undefined) sale.change = updateSaleDto.change;

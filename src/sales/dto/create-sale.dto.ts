@@ -3,12 +3,14 @@ import {
   ArrayMinSize,
   IsArray,
   IsEnum,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { PaymentMethod } from '../../common/enums/payment-method.enum';
@@ -29,6 +31,12 @@ export class CreateSaleDto {
 
   @IsEnum(PaymentMethod)
   paymentMethod: PaymentMethod;
+
+  @ValidateIf((o: CreateSaleDto) => o.paymentMethod === PaymentMethod.RAPPI)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  rappiOrderId?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)

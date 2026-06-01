@@ -45,6 +45,9 @@ export class Sale {
   })
   paymentMethod: PaymentMethod;
 
+  @Column({ name: 'rappi_order_id', length: 100, nullable: true })
+  rappiOrderId: string | null;
+
   @Column({ name: 'user_id' })
   userId: string;
 

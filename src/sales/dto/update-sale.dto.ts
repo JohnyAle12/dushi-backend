@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -32,6 +33,11 @@ export class UpdateSaleDto {
   @IsEnum(PaymentMethod)
   @IsOptional()
   paymentMethod?: PaymentMethod;
+
+  @IsString()
+  @MaxLength(100)
+  @IsOptional()
+  rappiOrderId?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
