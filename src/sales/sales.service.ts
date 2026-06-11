@@ -311,8 +311,8 @@ export class SalesService {
 
     const qb = this.salesRepository
       .createQueryBuilder('sale')
-      .select(`SUM(${totalAfterDiscountSql})`, 'total')
-      .addSelect('SUM(sale.total)', 'totalAfterDiscount')
+      .select(`SUM(${totalAfterDiscountSql})`, 'totalAfterDiscount')
+      .addSelect('SUM(sale.total)', 'total')
       .addSelect('COUNT(sale.id)', 'count')
       .where('sale.store_id = :storeId', { storeId })
       .andWhere('DATE(sale.created_at) >= :startDate', { startDate })
