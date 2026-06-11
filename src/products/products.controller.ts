@@ -70,8 +70,18 @@ export class ProductsController {
   }
 
   @Get(':id/transactions')
-  findTransactions(@Req() req: { user: AuthUser }, @Param('id') id: string) {
-    return this.productsService.findTransactions(id, req.user.storeId);
+  findTransactions(
+    @Req() req: { user: AuthUser },
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.productsService.findTransactions(
+      id,
+      req.user.storeId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+    );
   }
 
   @Delete(':id')

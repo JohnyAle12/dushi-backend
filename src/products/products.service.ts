@@ -118,12 +118,29 @@ export class ProductsService {
   async findTransactions(
     productId: string,
     storeId: string,
-  ): Promise<StockTransaction[]> {
+    page = 1,
+    limit = 10,
+  ): Promise<{
+    data: StockTransaction[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }> {
     await this.findOne(productId, storeId);
-    return this.stockTransactionsRepository.find({
+    const [data, total] = await this.stockTransactionsRepository.findAndCount({
       where: { productId },
       order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async restore(id: string, storeId: string): Promise<Product> {
