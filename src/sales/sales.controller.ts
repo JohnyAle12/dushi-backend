@@ -36,6 +36,7 @@ export class SalesController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('paymentMethod') paymentMethod?: string,
+    @Query('number') number?: string,
   ) {
     return this.salesService.findAll(
       req.user.storeId,
@@ -44,6 +45,7 @@ export class SalesController {
       startDate,
       endDate,
       paymentMethod,
+      number,
     );
   }
 

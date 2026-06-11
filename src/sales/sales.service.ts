@@ -5,14 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Between,
-  DataSource,
-  In,
-  LessThanOrEqual,
-  MoreThanOrEqual,
-  Repository,
-} from 'typeorm';
+import { Brackets, DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { StockMovementType } from '../common/enums/stock-movement-type.enum';
 import { Product } from '../products/entities/product.entity';
 import { StockTransaction } from '../products/entities/stock-transaction.entity';
@@ -119,6 +112,64 @@ export class SalesService {
     END`;
   }
 
+  private applySaleListFilters(
+    qb: SelectQueryBuilder<Sale>,
+    storeId: string,
+    startDate?: string,
+    endDate?: string,
+    paymentMethod?: string,
+    number?: string,
+  ): void {
+    qb.where('sale.storeId = :storeId', { storeId });
+
+    if (startDate && endDate) {
+      if (startDate > endDate) {
+        throw new BadRequestException(
+          'startDate must be before or equal to endDate',
+        );
+      }
+      qb.andWhere('sale.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: `${startDate}T00:00:00.000Z`,
+        endDate: `${endDate}T23:59:59.999Z`,
+      });
+    } else if (startDate) {
+      qb.andWhere('sale.createdAt >= :startDate', {
+        startDate: `${startDate}T00:00:00.000Z`,
+      });
+    } else if (endDate) {
+      qb.andWhere('sale.createdAt <= :endDate', {
+        endDate: `${endDate}T23:59:59.999Z`,
+      });
+    }
+
+    const paymentMethods = this.parsePaymentMethods(paymentMethod);
+    if (paymentMethods?.length) {
+      qb.andWhere('sale.paymentMethod IN (:...paymentMethods)', {
+        paymentMethods,
+      });
+    }
+
+    const trimmedNumber = number?.trim();
+    if (trimmedNumber) {
+      const pattern = `%${trimmedNumber}%`;
+      qb.andWhere(
+        new Brackets((sub) => {
+          sub
+            .where('sale.prefix LIKE :invoiceSearch', {
+              invoiceSearch: pattern,
+            })
+            .orWhere('sale.number LIKE :invoiceSearch', {
+              invoiceSearch: pattern,
+            })
+            .orWhere(
+              "CONCAT(sale.prefix, '-', sale.number) LIKE :invoiceSearch",
+              { invoiceSearch: pattern },
+            );
+        }),
+      );
+    }
+  }
+
   async create(createSaleDto: CreateSaleDto, auth: AuthUser): Promise<Sale> {
     if (
       createSaleDto.paymentMethod === PaymentMethod.RAPPI &&
@@ -210,39 +261,30 @@ export class SalesService {
     startDate?: string,
     endDate?: string,
     paymentMethod?: string,
+    number?: string,
   ): Promise<{
     data: SaleListResponseItem[];
     meta: { total: number; page: number; limit: number; totalPages: number };
   }> {
-    const where: Record<string, unknown> = { storeId };
-    if (startDate && endDate) {
-      if (startDate > endDate) {
-        throw new BadRequestException(
-          'startDate must be before or equal to endDate',
-        );
-      }
-      where.createdAt = Between(
-        `${startDate}T00:00:00.000Z`,
-        `${endDate}T23:59:59.999Z`,
-      );
-    } else if (startDate) {
-      where.createdAt = MoreThanOrEqual(`${startDate}T00:00:00.000Z`);
-    } else if (endDate) {
-      where.createdAt = LessThanOrEqual(`${endDate}T23:59:59.999Z`);
-    }
+    const qb = this.salesRepository
+      .createQueryBuilder('sale')
+      .leftJoinAndSelect('sale.items', 'items')
+      .leftJoinAndSelect('items.product', 'product')
+      .leftJoinAndSelect('sale.customer', 'customer')
+      .orderBy('sale.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    const paymentMethods = this.parsePaymentMethods(paymentMethod);
-    if (paymentMethods?.length) {
-      where.paymentMethod = In(paymentMethods);
-    }
+    this.applySaleListFilters(
+      qb,
+      storeId,
+      startDate,
+      endDate,
+      paymentMethod,
+      number,
+    );
 
-    const [sales, total] = await this.salesRepository.findAndCount({
-      where,
-      relations: ['items', 'items.product', 'customer'],
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [sales, total] = await qb.getManyAndCount();
 
     const data = sales.map((sale) => ({
       ...sale,
