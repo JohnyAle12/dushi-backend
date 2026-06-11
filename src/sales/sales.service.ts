@@ -222,7 +222,7 @@ export class SalesService {
             quantity: item.quantity,
             previousStock,
             newStock,
-            reason: `Venta`,
+            reason: `Venta ${prefix}-${nextNumber}`,
           });
           await manager.save(StockTransaction, transaction);
         }
@@ -596,7 +596,34 @@ export class SalesService {
 
   async remove(id: string, storeId: string): Promise<void> {
     const sale = await this.findOne(id, storeId);
-    await this.salesRepository.softRemove(sale);
+
+    await this.dataSource.transaction(async (manager) => {
+      for (const item of sale.items) {
+        const product = await manager.findOne(Product, {
+          where: { id: item.productId, storeId },
+        });
+
+        if (product && product.trackInventory) {
+          const previousStock = product.stock;
+          const newStock = previousStock + item.quantity;
+
+          product.stock = newStock;
+          await manager.save(Product, product);
+
+          const transaction = manager.create(StockTransaction, {
+            productId: product.id,
+            type: StockMovementType.IN,
+            quantity: item.quantity,
+            previousStock,
+            newStock,
+            reason: `Venta eliminada ${sale.prefix}-${sale.number}`,
+          });
+          await manager.save(StockTransaction, transaction);
+        }
+      }
+
+      await manager.softRemove(sale);
+    });
   }
 
   async restore(id: string, storeId: string): Promise<Sale> {
