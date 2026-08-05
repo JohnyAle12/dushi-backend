@@ -4,5 +4,6 @@ export enum PaymentMethod {
   NEQUI = 'nequi',
   DAVIPLATA = 'daviplata',
   BANCOLOMBIA = 'bancolombia',
+  BOLDQR = 'boldqr',
   RAPPI = 'rappi',
 }
