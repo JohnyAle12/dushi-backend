@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { DatabaseTimezoneService } from './database-timezone.service';
 import { AuthModule } from './auth/auth.module';
 import { CustomersModule } from './customers/customers.module';
+import { EmployeesModule } from './employees/employees.module';
 import { ProductsModule } from './products/products.module';
 import { PurchasesModule } from './purchases/purchases.module';
 import { SalesModule } from './sales/sales.module';
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
     StoresModule,
     UsersModule,
     CustomersModule,
+    EmployeesModule,
     ProductsModule,
     PurchasesModule,
     SalesModule,
