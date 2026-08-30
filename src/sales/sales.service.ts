@@ -98,6 +98,10 @@ export class SalesService {
       );
     }
 
+    if (paymentMethod === PaymentMethod.BOLDQR) {
+      return Number((numericTotal * (1 - 0.015)).toFixed(2));
+    }
+
     return numericTotal;
   }
 
@@ -108,6 +112,7 @@ export class SalesService {
     return `CASE
       WHEN ${paymentMethodColumn} = '${PaymentMethod.RAPPI}' THEN ${totalColumn} * (1 - 0.216)
       WHEN ${paymentMethodColumn} = '${PaymentMethod.CARD}' THEN ${totalColumn} - (${totalColumn} * 0.00414) - (${totalColumn} * 0.0329 + 300)
+      WHEN ${paymentMethodColumn} = '${PaymentMethod.BOLDQR}' THEN ${totalColumn} * (1 - 0.015)
       ELSE ${totalColumn}
     END`;
   }
