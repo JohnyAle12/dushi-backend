@@ -140,18 +140,18 @@ export class PurchasesService {
 
     const trimmedSearch = search?.trim();
     if (trimmedSearch) {
-      const pattern = `%${trimmedSearch}%`;
+      const pattern = `%${trimmedSearch.toLowerCase()}%`;
       qb.andWhere(
         new Brackets((sub) => {
           sub
-            .where('purchase.supplier LIKE :textSearch', {
+            .where('LOWER(purchase.supplier) LIKE :textSearch', {
               textSearch: pattern,
             })
-            .orWhere('purchase.observations LIKE :textSearch', {
+            .orWhere('LOWER(purchase.observations) LIKE :textSearch', {
               textSearch: pattern,
             })
             .orWhere(
-              "JSON_SEARCH(purchase.items, 'one', :textSearch, NULL, '$[*].name') IS NOT NULL",
+              "LOWER(CAST(JSON_EXTRACT(purchase.items, '$[*].name') AS CHAR)) LIKE :textSearch",
               { textSearch: pattern },
             );
         }),
