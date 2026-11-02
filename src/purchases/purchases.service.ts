@@ -149,7 +149,11 @@ export class PurchasesService {
             })
             .orWhere('purchase.observations LIKE :textSearch', {
               textSearch: pattern,
-            });
+            })
+            .orWhere(
+              "JSON_SEARCH(purchase.items, 'one', :textSearch, NULL, '$[*].name') IS NOT NULL",
+              { textSearch: pattern },
+            );
         }),
       );
     }
