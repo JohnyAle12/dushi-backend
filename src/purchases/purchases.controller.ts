@@ -39,6 +39,7 @@ export class PurchasesController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('search') search?: string,
+    @Query('paymentMethod') paymentMethod?: string,
   ) {
     return this.purchasesService.findAll(
       req.user.storeId,
@@ -47,6 +48,7 @@ export class PurchasesController {
       startDate,
       endDate,
       search,
+      paymentMethod,
     );
   }
 
@@ -56,12 +58,14 @@ export class PurchasesController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('search') search?: string,
+    @Query('paymentMethod') paymentMethod?: string,
   ) {
     return this.purchasesService.getSummary(
       req.user.storeId,
       startDate,
       endDate,
       search,
+      paymentMethod,
     );
   }
 

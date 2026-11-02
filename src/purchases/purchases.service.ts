@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository, SelectQueryBuilder } from 'typeorm';
+import { PaymentMethod } from '../common/enums/payment-method.enum';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { UpdatePurchaseDto } from './dto/update-purchase.dto';
 import { Purchase } from './entities/purchase.entity';
@@ -34,6 +35,7 @@ export class PurchasesService {
     startDate?: string,
     endDate?: string,
     search?: string,
+    paymentMethod?: string,
   ): Promise<{
     data: Purchase[];
     meta: { total: number; page: number; limit: number; totalPages: number };
@@ -52,7 +54,14 @@ export class PurchasesService {
       .skip((page - 1) * limit)
       .take(limit);
 
-    this.applyPurchaseListFilters(qb, storeId, startDate, endDate, search);
+    this.applyPurchaseListFilters(
+      qb,
+      storeId,
+      startDate,
+      endDate,
+      search,
+      paymentMethod,
+    );
 
     const [data, total] = await qb.getManyAndCount();
 
@@ -72,6 +81,7 @@ export class PurchasesService {
     startDate?: string,
     endDate?: string,
     search?: string,
+    paymentMethod?: string,
   ): Promise<{ invoiceCount: number; totalSpent: number }> {
     this.assertPurchaseFiltersValid(startDate, endDate);
 
@@ -80,7 +90,14 @@ export class PurchasesService {
       .select('COUNT(purchase.id)', 'invoiceCount')
       .addSelect('COALESCE(SUM(purchase.total), 0)', 'totalSpent');
 
-    this.applyPurchaseListFilters(qb, storeId, startDate, endDate, search);
+    this.applyPurchaseListFilters(
+      qb,
+      storeId,
+      startDate,
+      endDate,
+      search,
+      paymentMethod,
+    );
 
     const row = await qb.getRawOne<{
       invoiceCount: string;
@@ -122,6 +139,7 @@ export class PurchasesService {
     startDate?: string,
     endDate?: string,
     search?: string,
+    paymentMethod?: string,
   ): void {
     qb.where('purchase.storeId = :storeId', { storeId }).andWhere(
       'purchase.deletedAt IS NULL',
@@ -136,6 +154,13 @@ export class PurchasesService {
       qb.andWhere('purchase.date >= :startDate', { startDate });
     } else if (endDate) {
       qb.andWhere('purchase.date <= :endDate', { endDate });
+    }
+
+    const paymentMethods = this.parsePaymentMethods(paymentMethod);
+    if (paymentMethods?.length) {
+      qb.andWhere('purchase.paymentMethod IN (:...paymentMethods)', {
+        paymentMethods,
+      });
     }
 
     const trimmedSearch = search?.trim();
@@ -174,6 +199,33 @@ export class PurchasesService {
         'startDate must be before or equal to endDate',
       );
     }
+  }
+
+  private parsePaymentMethods(
+    paymentMethod?: string,
+  ): PaymentMethod[] | undefined {
+    if (!paymentMethod) {
+      return undefined;
+    }
+
+    const methods = paymentMethod
+      .split(',')
+      .map((method) => method.trim())
+      .filter(Boolean);
+    const validMethods = Object.values(PaymentMethod);
+    const invalid = methods.filter(
+      (method) => !validMethods.includes(method as PaymentMethod),
+    );
+
+    if (invalid.length > 0) {
+      throw new BadRequestException(
+        `paymentMethod must be one of: ${validMethods.join(
+          ', ',
+        )}. Invalid: ${invalid.join(', ')}`,
+      );
+    }
+
+    return methods as PaymentMethod[];
   }
 
   private isValidDateFormat(value: string): boolean {
